@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#F57C00">
+<title>سوقنا</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--o:#F57C00;--od:#C75B00;--bg:#FFF4E8;--ink:#3B1F0B;--w:#fff}
+*{box-sizing:border-box;margin:0}
+body{font-family:Tajawal,sans-serif;background:var(--bg);color:var(--ink);max-width:480px;margin:auto;min-height:100vh;padding-bottom:70px}
+header{background:var(--o);color:var(--w);padding:18px 16px 12px;position:sticky;top:0;z-index:5;border-radius:0 0 22px 22px}
+h1{font-size:26px;font-weight:800;user-select:none}
+.tabs{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:4px}
+.tabs button{flex:none;border:0;border-radius:20px;padding:8px 14px;font:700 14px Tajawal;background:#ffffff33;color:var(--w)}
+.tabs button.on{background:var(--w);color:var(--od)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}
+.card{background:var(--w);border-radius:16px 16px 6px 16px;overflow:hidden;box-shadow:0 2px 8px #c75b0022}
+.card img,.ph{width:100%;aspect-ratio:1;object-fit:cover;background:#FFE0BF;display:block}
+.card .b{padding:10px}
+.card h3{font-size:15px}
+.pr{color:var(--od);font-weight:800;margin-top:4px}
+.mini{display:flex;gap:6px;margin-top:8px}
+.mini button{flex:1;border:1px solid var(--o);background:none;color:var(--od);border-radius:8px;padding:5px;font:700 12px Tajawal}
+.empty{grid-column:1/-1;text-align:center;padding:40px 10px;color:#8a5a2b}
+.bar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:auto;background:var(--w);display:flex;justify-content:space-around;padding:10px;border-top:2px solid var(--o)}
+.bar a,.bar button{color:var(--od);font:800 15px Tajawal;text-decoration:none;background:none;border:0}
+.sh{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:10}
+.sh.show{display:flex}
+.sh>div{background:var(--w);width:100%;max-width:480px;max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;padding:20px}
+.sh h2{margin-bottom:12px;color:var(--od)}
+input,select{width:100%;padding:12px;margin:6px 0;border:2px solid #FFD2A1;border-radius:10px;font:16px Tajawal;direction:rtl}
+.btn{width:100%;background:var(--o);color:var(--w);border:0;border-radius:12px;padding:13px;font:800 17px Tajawal;margin-top:8px}
+.btn.g{background:#FFE0BF;color:var(--od)}
+.row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #FFE0BF;gap:8px}
+.msg{color:#b3261e;font-size:14px;min-height:18px}
+</style></head><body>
+<header><h1 id="logo">🍊 سوقنا</h1><div class="tabs" id="tabs"></div></header>
+<div class="grid" id="grid"></div>
+<div class="bar"><a id="map" target="_blank" rel="noopener">📍 موقعنا</a><button id="adm" style="display:none" onclick="openAdmin()">⚙️ الإدارة</button></div>
+
+<div class="sh" id="reg"><div><h2>أهلاً بك 👋</h2><p>سجّل اسمك ورقمك لنوصلك بالعروض.</p>
+<input id="rn" placeholder="الاسم"><input id="rp" type="tel" inputmode="tel" placeholder="رقم الجوال">
+<div class="msg" id="rm"></div><button class="btn" onclick="register()">تسجيل</button><button class="btn g" onclick="shut('reg')">لاحقاً</button></div></div>
+
+<div class="sh" id="login"><div><h2>دخول المالك</h2>
+<input id="le" type="email" placeholder="البريد الإلكتروني" dir="ltr"><input id="lp" type="password" placeholder="كلمة المرور" dir="ltr">
+<div class="msg" id="lm"></div><button class="btn" onclick="doLogin()">دخول</button><button class="btn g" onclick="shut('login')">إغلاق</button></div></div>
+
+<div class="sh" id="panel"><div><h2>إضافة منتج</h2>
+<input id="pn" placeholder="اسم المنتج"><input id="pp" type="number" inputmode="decimal" placeholder="السعر">
+<select id="ps"></select><input id="pi" type="file" accept="image/*">
+<div class="msg" id="pm"></div><button class="btn" onclick="addProd()">حفظ المنتج</button>
+<h2 style="margin-top:22px">المسجلون <span id="cc"></span></h2><div id="cl"></div>
+<button class="btn g" onclick="signOut()">تسجيل خروج</button><button class="btn g" onclick="shut('panel')">إغلاق</button></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===== الإعدادات: عدّلها ===== */
+const CFG={apiKey:"",authDomain:"",projectId:"",appId:""}; // من Firebase
+const MAP_URL="https://www.google.com/maps/search/?api=1&query=ضع+اسم+المحل+او+العنوان";
+const CUR="ر.س";
+/* ============================== */
+const SECS=["ملابس","إكسسوارات","أدوات منزلية","أحذية","عطور ومكياج"];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let cur=SECS[0],prods=[],admin=false,db,auth,unsubC;
+const live=!!CFG.projectId;
+$("map").href=MAP_URL;
+$("ps").innerHTML=SECS.map(s=>`<option>${s}</option>`).join("");
+function tabs(){$("tabs").innerHTML=SECS.map(s=>`<button class="${s==cur?'on':''}" onclick="cur='${s}';tabs();render()">${s}</button>`).join("")}
+function render(){
+ const l=prods.filter(p=>p.sec==cur);
+ $("grid").innerHTML=l.length?l.map(p=>`<div class="card">${p.img?`<img src="${p.img}" alt="">`:'<div class="ph"></div>'}<div class="b"><h3>${esc(p.name)}</h3><div class="pr">${esc(p.price)} ${CUR}</div>${admin?`<div class="mini"><button onclick="editPrice('${p.id}')">السعر</button><button onclick="delProd('${p.id}')">حذف</button></div>`:''}</div></div>`).join(""):`<div class="empty">لا توجد منتجات في هذا القسم بعد.</div>`;
+}
+function shut(i){$(i).classList.remove("show")}
+function show(i){$(i).classList.add("show")}
+if(live){
+ firebase.initializeApp(CFG);db=firebase.firestore();auth=firebase.auth();
+ db.collection("products").orderBy("t","desc").onSnapshot(s=>{prods=s.docs.map(d=>({id:d.id,...d.data()}));render()});
+ auth.onAuthStateChanged(u=>{admin=!!u;$("adm").style.display=u?"block":"none";render();if(!u&&unsubC){unsubC();unsubC=null}});
+}
+tabs();render();
+if(!localStorage.getItem("reg"))setTimeout(()=>show("reg"),600);
+async function register(){
+ const n=$("rn").value.trim(),p=$("rp").value.replace(/\s/g,"");
+ if(n.length<2||!/^[0-9+]{9,15}$/.test(p)){$("rm").textContent="اكتب اسمك ورقم جوال صحيح.";return}
+ try{if(live)await db.collection("customers").add({name:n,phone:p,t:firebase.firestore.FieldValue.serverTimestamp()});
+ localStorage.setItem("reg","1");shut("reg")}catch(e){$("rm").textContent="تعذر التسجيل، حاول مرة أخرى."}
+}
+let taps=0,tt;
+$("logo").onclick=()=>{taps++;clearTimeout(tt);tt=setTimeout(()=>taps=0,1500);if(taps>=5){taps=0;admin?openAdmin():show("login")}};
+async function doLogin(){
+ if(!live){$("lm").textContent="أضف إعدادات Firebase أولاً.";return}
+ try{await auth.signInWithEmailAndPassword($("le").value.trim(),$("lp").value);shut("login");openAdmin()}
+ catch(e){$("lm").textContent="البريد أو كلمة المرور غير صحيحة."}
+}
+function signOut(){auth.signOut();shut("panel")}
+function openAdmin(){
+ show("panel");if(unsubC)return;
+ unsubC=db.collection("customers").orderBy("t","desc").onSnapshot(s=>{
+  $("cc").textContent="("+s.size+")";
+  $("cl").innerHTML=s.docs.map(d=>{const c=d.data();return `<div class="row"><b>${esc(c.name)}</b><a href="tel:${esc(c.phone)}" dir="ltr">${esc(c.phone)}</a></div>`}).join("")||'<div class="empty">لا يوجد مسجلون بعد.</div>';
+ });
+}
+function shrink(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=()=>{const m=600,k=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.7))};i.onerror=rej;i.src=r.result};r.onerror=rej;r.readAsDataURL(f)})}
+async function addProd(){
+ const n=$("pn").value.trim(),p=$("pp").value,f=$("pi").files[0];
+ if(!n||!p){$("pm").textContent="اكتب الاسم والسعر.";return}
+ try{const img=f?await shrink(f):"";
+  await db.collection("products").add({name:n,price:p,sec:$("ps").value,img,t:firebase.firestore.FieldValue.serverTimestamp()});
+  $("pn").value=$("pp").value=$("pi").value="";$("pm").textContent="تمت الإضافة ✓"}
+ catch(e){$("pm").textContent="تعذر الحفظ. تأكد أنك مسجل دخول."}
+}
+function editPrice(id){const p=prods.find(x=>x.id==id),v=prompt("السعر الجديد",p.price);if(v&&v.trim())db.collection("products").doc(id).update({price:v.trim()})}
+function delProd(id){if(confirm("حذف هذا المنتج؟"))db.collection("products").doc(id).delete()}
+</script></body></html>
